@@ -43,7 +43,7 @@ function showStatus(text: string) {
 // Map of San Francisco with one dot per triaged call, coloured by Jev's code
 // and ringed in white where the dispatcher disagreed.
 const map = L.map("map", { zoomControl: false, attributionControl: true }).setView([37.76, -122.44], 12);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 18 }).addTo(map);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19, className: "dark-tiles" }).addTo(map);
 const colour = (code: 2 | 3) => (code === 3 ? "#f43f5e" : "#2563eb");
 function plot(s: Scored) {
   if (!s.call.lat || !s.call.lng) return;
