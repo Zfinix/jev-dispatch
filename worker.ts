@@ -1,4 +1,5 @@
-import { fetchCalls } from "./src/sf";
+import { fetchDetroit } from "./src/detroit";
+import { fetchSf } from "./src/sf";
 import { Jev } from "./src/jev";
 
 type Env = { JEV_API_KEY: string; ASSETS: { fetch: (request: Request) => Promise<Response> } };
@@ -6,19 +7,20 @@ type Env = { JEV_API_KEY: string; ASSETS: { fetch: (request: Request) => Promise
 let jev: Jev | undefined;
 
 // The page never sees the key or talks to the city directly: this proxies both,
-// caching the call feed for ten minutes since the city loads data once a day.
+// caching each city's feed for a minute so a crowd doesn't hammer the portals.
 export default {
   async fetch(request: Request, env: Env, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/api/calls") {
-      const since = Number(url.searchParams.get("since") ?? Date.now() - 48 * 3600_000);
-      const key = new Request(`${url.origin}/api/calls?since=${Math.floor(since / 600_000)}`);
+      const city = url.searchParams.get("city") === "sf" ? "sf" : "detroit";
+      const since = Number(url.searchParams.get("since") ?? Date.now() - 12 * 3600_000);
+      const key = new Request(`${url.origin}/api/calls?city=${city}&since=${Math.floor(since / 60_000)}`);
       const cache = (caches as unknown as { default: Cache }).default;
       const hit = await cache.match(key);
       if (hit) return hit;
       try {
-        const calls = await fetchCalls(since);
-        const response = Response.json({ calls, fetchedAt: Date.now() }, { headers: { "cache-control": "public, max-age=600" } });
+        const calls = await (city === "sf" ? fetchSf(since) : fetchDetroit(since));
+        const response = Response.json({ calls, fetchedAt: Date.now() }, { headers: { "cache-control": "public, max-age=60" } });
         ctx.waitUntil(cache.put(key, response.clone()));
         return response;
       } catch (error) {

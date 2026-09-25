@@ -1,5 +1,6 @@
 import index from "../viewer/index.html";
-import { fetchCalls } from "../src/sf";
+import { fetchDetroit } from "../src/detroit";
+import { fetchSf } from "../src/sf";
 import { Jev } from "../src/jev";
 
 const PORT = Number(process.env.PORT ?? 4300);
@@ -13,9 +14,10 @@ const server = Bun.serve({
   routes: {
     "/": index,
     "/api/calls": async (request) => {
-      const since = Number(new URL(request.url).searchParams.get("since") ?? Date.now() - 48 * 3600_000);
+      const url = new URL(request.url);
+      const since = Number(url.searchParams.get("since") ?? Date.now() - 12 * 3600_000);
       try {
-        return Response.json({ calls: await fetchCalls(since), fetchedAt: Date.now() });
+        return Response.json({ calls: await (url.searchParams.get("city") === "sf" ? fetchSf(since) : fetchDetroit(since)), fetchedAt: Date.now() });
       } catch (error) {
         return Response.json({ message: String(error) }, { status: 502 });
       }

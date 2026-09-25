@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Jev Dispatch</title>
-    <meta name="description" content="Real San Francisco Fire and EMS 911 calls, triaged by Jev, a decision model that never writes a word, and scored against the human dispatcher." />
+    <meta name="description" content="Real 911 calls from Detroit and San Francisco, triaged by Jev, a decision model that never writes a word, and scored against the human dispatcher and a dumb baseline." />
     <meta name="theme-color" content="#0a0a0a" />
     <link rel="canonical" href="https://dispatch.chizi.app/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Jev Dispatch" />
-    <meta property="og:description" content="Real San Francisco 911 calls, triaged by a decision model and scored against the human dispatcher." />
+    <meta property="og:description" content="Real 911 calls, triaged by a decision model and scored against the human dispatcher and a dumb baseline." />
     <meta property="og:url" content="https://dispatch.chizi.app/" />
     <meta name="twitter:card" content="summary" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚨</text></svg>" />
@@ -23,20 +23,24 @@
     <div class="app">
       <header class="topbar">
         <div class="brand">Jev Dispatch</div>
-        <div class="clock" id="clock">San Francisco, waiting for calls</div>
+        <div class="clock" id="clock">Waiting for calls</div>
         <div class="stats" id="stats"></div>
+        <div class="segmented" role="tablist" aria-label="City">
+          <button type="button" role="tab" data-city="detroit" aria-selected="true">Detroit</button>
+          <button type="button" role="tab" data-city="sf" aria-selected="false" tabindex="-1">San Francisco</button>
+        </div>
         <div class="segmented" role="tablist" aria-label="Mode">
           <button type="button" role="tab" data-mode="live" aria-selected="true">Live</button>
-          <button type="button" role="tab" data-mode="replay" aria-selected="false" tabindex="-1">Replay a week</button>
+          <button type="button" role="tab" data-mode="replay" aria-selected="false" tabindex="-1">Replay</button>
         </div>
         <button type="button" class="btn primary" id="run" aria-pressed="false">Start</button>
       </header>
 
       <main class="workspace">
         <section class="stage">
-          <div id="map" aria-label="Map of San Francisco calls"></div>
+          <div id="map" aria-label="Map of calls"></div>
           <div class="legend">
-            <span><i class="c3"></i>Code 3, lights and sirens</span><span><i class="c2"></i>Code 2</span><span><i class="miss"></i>Jev disagreed</span>
+            <span id="legend-items"></span><span><i class="miss"></i>Jev disagreed</span>
           </div>
           <p class="status" id="status" role="status" hidden></p>
         </section>
