@@ -53,21 +53,23 @@ function plot(s: Scored) {
   dot.addTo(map);
 }
 
-function chip(code: 2 | 3 | undefined, cls: string): HTMLElement {
-  return el("span", `chip ${cls}${code ? ` c${code}` : " pending"}`, code ? `C${code}` : "…");
+function chip(code: 2 | 3 | undefined, caption: string): HTMLElement {
+  const box = el("span", "verdict-cell");
+  box.append(el("span", `chip${code ? ` c${code}` : " pending"}`, code ? `C${code}` : "…"), el("span", "caption", caption));
+  return box;
 }
 
 function renderCall(call: Call, verdict?: Scored): HTMLElement {
-  const li = el("li", `call${verdict && verdict.jev.code !== call.truth.code ? " miss" : ""}`);
+  const miss = !!verdict && verdict.jev.code !== call.truth.code;
+  const li = el("li", `call${miss ? " miss" : ""}${verdict ? "" : " pending"}`);
   li.dataset.id = call.id;
-  li.append(el("span", "when", shortTime(call.receivedAt)), el("span", "desc", call.type));
-  li.append(el("span", "where", `${call.address} · ${call.neighborhood}`));
+  const title = el("span", "title");
+  title.append(el("span", "desc", call.type), el("span", "hood", call.neighborhood));
+  if (miss) title.append(el("span", "badge", "disagree"));
+  li.append(el("span", "when", shortTime(call.receivedAt)), title);
+  li.append(el("span", "where", call.address.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase())));
   const v = el("span", "verdict");
-  const jev = chip(verdict?.jev.code, "jev");
-  jev.title = "Jev's response code";
-  const human = chip(verdict ? call.truth.code : undefined, "dispatcher");
-  human.title = "Dispatcher's response code";
-  v.append(jev, human);
+  v.append(chip(verdict?.jev.code, "Jev"), chip(verdict ? call.truth.code : undefined, "Dispatcher"));
   li.append(v);
   if (verdict) {
     const t = call.truth;
@@ -75,11 +77,11 @@ function renderCall(call: Call, verdict?: Scored): HTMLElement {
     const mark = (ok: boolean, text: string) => el("span", `tag ${ok ? "right" : "wrong"}`, text);
     if (verdict.jev.threat > 0.5) tags.append(mark(t.threat, `life-threatening ${Math.round(verdict.jev.threat * 100)}%`));
     tags.append(mark((verdict.jev.als > 0.5) === t.als, verdict.jev.als > 0.5 ? "paramedic" : "basic care"));
-    tags.append(mark(verdict.jev.lead === t.lead, `first out: ${LEADS[verdict.jev.lead].split(" (")[0].replace(/^a |^an /, "")}`));
-    tags.append(mark(verdict.jev.units === unitsLabel(t.units), `${verdict.jev.units} · sent ${t.units}`));
+    tags.append(mark(verdict.jev.lead === t.lead, LEADS[verdict.jev.lead].split(" (")[0].replace(/^a |^an /, "")));
+    tags.append(mark(verdict.jev.units === unitsLabel(t.units), `${verdict.jev.units === "several" ? "3+" : verdict.jev.units} unit${verdict.jev.units === "one" ? "" : "s"}, sent ${t.units}`));
     const actual = bucket(t.responseMin);
-    tags.append(actual === null ? el("span", "tag", `expects ${RESPONSE[verdict.jev.response]}`) : mark(Math.abs(verdict.jev.response - actual) <= 1, `expects ${RESPONSE[verdict.jev.response]} · arrived ${Math.round(t.responseMin!)} min`));
-    tags.append(el("span", "tag", `${Math.round(verdict.jev.confidence * 100)}% sure`));
+    tags.append(actual === null ? el("span", "tag", RESPONSE[verdict.jev.response]) : mark(Math.abs(verdict.jev.response - actual) <= 1, `${RESPONSE[verdict.jev.response]}, arrived ${Math.round(t.responseMin!)} min`));
+    tags.append(el("span", "tag sure", `${Math.round(verdict.jev.confidence * 100)}%`));
     li.append(tags);
   }
   return li;
