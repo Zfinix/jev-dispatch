@@ -1,0 +1,12 @@
+{
+  "name": "jev-dispatch",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "bun --env-file=.dev.vars scripts/serve.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "bun build viewer/index.html --outdir dist --minify",
+    "deploy": "bun run build && wrangler deploy"
+  },
+  "devDependencies": { "@types/bun": "latest", "typescript": "^5.6.0", "wrangler": "^4.134.0" }
+}
