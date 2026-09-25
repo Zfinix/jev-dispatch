@@ -2,7 +2,7 @@ import type { Call } from "../src/sf";
 import type { Answer } from "../src/jev";
 import { BATCH, bucket, emptyBoard, LEADS, questionsFor, QUESTIONS_PER_CALL, RESPONSE, score, stateText, unitsLabel, verdicts, type Board, type Scored } from "../src/triage";
 
-declare const L: any;
+declare const maplibregl: any;
 
 const JEV_USD_PER_MTOKEN = 0.042;
 const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!;
@@ -40,17 +40,35 @@ function showStatus(text: string) {
   status.hidden = !text;
 }
 
-// Map of San Francisco with one dot per triaged call, coloured by Jev's code
-// and ringed in white where the dispatcher disagreed.
-const map = L.map("map", { zoomControl: false, attributionControl: true }).setView([37.76, -122.44], 12);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19, className: "dark-tiles" }).addTo(map);
+// CARTO's Dark Matter vector basemap, one dot per triaged call coloured by
+// Jev's code and ringed in white where the dispatcher disagreed.
+const map = new maplibregl.Map({ container: "map", style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", center: [-122.44, 37.76], zoom: 11.4, attributionControl: { compact: true } });
+const features: unknown[] = [];
+let mapReady = false;
+map.on("load", () => {
+  map.addSource("calls", { type: "geojson", data: { type: "FeatureCollection", features } });
+  map.addLayer({ id: "calls", type: "circle", source: "calls", paint: { "circle-radius": ["case", ["get", "miss"], 6.5, 5], "circle-color": ["get", "colour"], "circle-opacity": 0.85, "circle-stroke-width": ["case", ["get", "miss"], 2, 0.8], "circle-stroke-color": ["case", ["get", "miss"], "#ffffff", ["get", "colour"]] } });
+  const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+  map.on("mouseenter", "calls", (e: any) => {
+    map.getCanvas().style.cursor = "pointer";
+    const p = e.features[0].properties;
+    popup.setLngLat(e.features[0].geometry.coordinates).setHTML(`<b>${p.type}</b><br>Jev C${p.jev} · dispatcher C${p.real}<br>${p.hood}`).addTo(map);
+  });
+  map.on("mouseleave", "calls", () => {
+    map.getCanvas().style.cursor = "";
+    popup.remove();
+  });
+  mapReady = true;
+  redraw();
+});
+function redraw() {
+  if (mapReady) map.getSource("calls").setData({ type: "FeatureCollection", features });
+}
 const colour = (code: 2 | 3) => (code === 3 ? "#f43f5e" : "#2563eb");
 function plot(s: Scored) {
   if (!s.call.lat || !s.call.lng) return;
-  const miss = s.jev.code !== s.call.truth.code;
-  const dot = L.circleMarker([s.call.lat, s.call.lng], { radius: miss ? 7 : 5, color: miss ? "#ffffff" : colour(s.jev.code), weight: miss ? 2 : 1, fillColor: colour(s.jev.code), fillOpacity: 0.85 });
-  dot.bindTooltip(`${s.call.type}<br>Jev code ${s.jev.code} · dispatcher code ${s.call.truth.code}<br>${s.call.neighborhood}`);
-  dot.addTo(map);
+  features.push({ type: "Feature", geometry: { type: "Point", coordinates: [s.call.lng, s.call.lat] }, properties: { type: s.call.type, hood: s.call.neighborhood, jev: s.jev.code, real: s.call.truth.code, colour: colour(s.jev.code), miss: s.jev.code !== s.call.truth.code } });
+  redraw();
 }
 
 function chip(code: 2 | 3 | undefined, caption: string): HTMLElement {
@@ -292,7 +310,8 @@ for (const b of document.querySelectorAll<HTMLButtonElement>("[data-mode]")) {
     board = emptyBoard();
     latestCalledAt = 0;
     list.replaceChildren();
-    map.eachLayer((layer: any) => { if (layer instanceof L.CircleMarker) map.removeLayer(layer); });
+    features.length = 0;
+    redraw();
     runButton.textContent = "Start";
     renderStats();
     renderInspector();
