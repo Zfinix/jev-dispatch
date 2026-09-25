@@ -46,7 +46,7 @@ const map = L.map("map", { zoomControl: false, attributionControl: true }).setVi
 // CARTO's dark basemap first; if its tiles fail, fall back to OpenStreetMap
 // tiles darkened with a filter so the floor never goes blank.
 const CARTO_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZjE3cWI1ajMiLCJqdGkiOiJlYjBjNzQ2MCJ9.S6wLJ53px-sgbjpxBkIDGvasMU-F4rpxMQH80EVW6Qw";
-const carto = L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?api_key=${CARTO_KEY}`, { attribution: "&copy; OpenStreetMap &copy; CARTO", subdomains: "abcd", maxZoom: 19 }).addTo(map);
+const carto = L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, { attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 19 }).addTo(map);
 let tileFailures = 0;
 carto.on("tileerror", () => {
   if (++tileFailures < 3 || !map.hasLayer(carto)) return;
